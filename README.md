@@ -1,4 +1,13 @@
-# wallapop-catalogue
+<p align="center">
+  <img src="assets/icon.jpg" width="96" alt="">
+</p>
+
+<h1 align="center">wallapop-catalogue</h1>
+
+<p align="center">
+  <a href="https://github.com/PlatanosVerdes/wallapop-catalogue/tags"><img src="https://img.shields.io/github/v/tag/PlatanosVerdes/wallapop-catalogue?label=release&color=2f7d3a" alt="Latest release"></a>
+  <img src="https://img.shields.io/github/go-mod/go-version/PlatanosVerdes/wallapop-catalogue" alt="Go version">
+</p>
 
 Reactivates my expired Wallapop listings once a day, and answers for it in
 [@PlatanosServicesBot](https://t.me/PlatanosServicesBot).
