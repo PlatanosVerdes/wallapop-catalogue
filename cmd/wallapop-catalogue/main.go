@@ -146,9 +146,11 @@ func cmdServe(cfg config.Config, store *session.Store, log *slog.Logger, args []
 		WarnBefore: cfg.WarnBefore,
 		NextRun:    nextRun,
 	}
+	mux := http.NewServeMux()
+	mux.Handle("/", health.Handler())
 	srv := &http.Server{
 		Addr:              ":" + strconv.Itoa(*port),
-		Handler:           health.Handler(),
+		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	go func() {
@@ -190,11 +192,15 @@ func cmdServe(cfg config.Config, store *session.Store, log *slog.Logger, args []
 			Log:     log,
 		}
 		listener.Commands = b.commands(listener)
-		go func() {
-			if err := listener.Serve(ctx); err != nil {
-				log.Error("the bot stopped listening", "err", err)
-			}
-		}()
+		if cfg.TelegramPush {
+			pushUpdates(ctx, mux, listener, log)
+		} else {
+			go func() {
+				if err := listener.Serve(ctx); err != nil {
+					log.Error("the bot stopped listening", "err", err)
+				}
+			}()
+		}
 	}
 
 	wg.Wait()

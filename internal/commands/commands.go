@@ -56,12 +56,7 @@ func (l *Listener) Serve(ctx context.Context) error {
 	if l.Bot == nil || !l.Bot.Enabled() {
 		return nil
 	}
-	if l.Backoff == 0 {
-		l.Backoff = 10 * time.Second
-	}
-	if l.StaleAfter == 0 {
-		l.StaleAfter = 2 * time.Minute
-	}
+	l.defaults()
 
 	if err := l.Bot.SetCommands(ctx, l.menu()); err != nil {
 		l.Log.Warn("could not publish the command menu", "err", err)
@@ -85,20 +80,38 @@ func (l *Listener) Serve(ctx context.Context) error {
 
 		for _, update := range updates {
 			offset = update.UpdateID + 1
-			switch {
-			case update.CallbackQuery != nil:
-				// A press has no timestamp, so presses queued before a restart are skipped.
-				if first {
-					continue
-				}
-				l.press(ctx, *update.CallbackQuery)
-			case update.Message != nil:
-				l.handle(ctx, *update.Message)
+			// A press has no timestamp, so presses queued before a restart are skipped.
+			if first && update.CallbackQuery != nil {
+				continue
 			}
+			l.Dispatch(ctx, update)
 		}
 		first = false
 	}
 }
+
+// Dispatch answers one update; with switchboard reading the bot, updates arrive here over HTTP.
+func (l *Listener) Dispatch(ctx context.Context, update telegram.Update) {
+	l.defaults()
+	switch {
+	case update.CallbackQuery != nil:
+		l.press(ctx, *update.CallbackQuery)
+	case update.Message != nil:
+		l.handle(ctx, *update.Message)
+	}
+}
+
+func (l *Listener) defaults() {
+	if l.Backoff == 0 {
+		l.Backoff = 10 * time.Second
+	}
+	if l.StaleAfter == 0 {
+		l.StaleAfter = 2 * time.Minute
+	}
+}
+
+// Menu is what switchboard publishes as the bot's menu for this service.
+func (l *Listener) Menu() []telegram.Command { return l.menu() }
 
 func (l *Listener) menu() []telegram.Command {
 	menu := make([]telegram.Command, 0, len(l.Commands))
