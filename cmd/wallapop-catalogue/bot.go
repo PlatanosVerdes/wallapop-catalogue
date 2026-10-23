@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 
@@ -121,4 +123,25 @@ func when(t, now time.Time) string {
 		return "ayer " + t.Format("15:04")
 	}
 	return t.Format("2/1 15:04")
+}
+
+// pushUpdates takes the bot's updates from switchboard instead of polling Telegram.
+func pushUpdates(ctx context.Context, mux *http.ServeMux, listener *commands.Listener, log *slog.Logger) {
+	mux.HandleFunc("POST /telegram/update", func(w http.ResponseWriter, r *http.Request) {
+		var update telegram.Update
+		if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
+			http.Error(w, "not an update", http.StatusBadRequest)
+			return
+		}
+		// Answered at once: switchboard waits only 15 s and some commands take longer.
+		go listener.Dispatch(ctx, update)
+		w.WriteHeader(http.StatusAccepted)
+	})
+	mux.HandleFunc("GET /telegram/commands", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(listener.Menu()); err != nil {
+			log.Error("could not send the commands", "err", err)
+		}
+	})
+	log.Info("bot updates come from switchboard")
 }

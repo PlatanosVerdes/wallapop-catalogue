@@ -33,6 +33,8 @@ type Config struct {
 	// The services bot: TelegramChat is the owner's, the only chat it answers.
 	TelegramToken string
 	TelegramChat  string
+	// TelegramPush leaves reading the bot to switchboard, which posts the updates here.
+	TelegramPush bool
 
 	LogJSON bool
 }
@@ -56,6 +58,7 @@ func Load() (Config, error) {
 
 		TelegramToken: env("WALLA_TELEGRAM_TOKEN", ""),
 		TelegramChat:  env("WALLA_TELEGRAM_CHAT", ""),
+		TelegramPush:  env("WALLA_TELEGRAM_UPDATES", "poll") == "push",
 
 		LogJSON: env("WALLA_LOG_JSON", "") == "1",
 	}
